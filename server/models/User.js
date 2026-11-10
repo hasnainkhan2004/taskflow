@@ -3,42 +3,53 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    seedTag: { type: String, default: undefined, index: true },
+    username: {
       type: String,
-      required: [true, 'Please add a name'],
+      required: [true, 'Please add a username'],
       trim: true,
+      lowercase: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-z0-9_]+$/,
     },
     email: {
       type: String,
       required: [true, 'Please add an email'],
-      unique: true,
       lowercase: true,
       trim: true,
+      maxlength: 254,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
     },
     password: {
       type: String,
       required: [true, 'Please add a password'],
-      minlength: 6,
-      select: false, // password by default query mein nahi aayega
+      minlength: 8,
+      select: false,
     },
   },
-  { timestamps: true }
+  { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-// Save hone se pehle password hash karo
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
-    return;
+userSchema.index({ username: 1 }, { unique: true });
+userSchema.index({ email: 1 }, { unique: true });
+
+userSchema.pre('save', async function () {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 12);
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
-// Login ke waqt password compare karne ka method
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);

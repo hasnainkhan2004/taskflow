@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const projectSchema = new mongoose.Schema(
   {
+    seedTag: { type: String, default: undefined, index: true },
     title: {
       type: String,
       required: [true, 'Please add a project title'],
@@ -15,6 +16,11 @@ const projectSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
+    },
+    workspace: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Workspace',
+      index: true,
     },
     members: [
       {
